@@ -1,10 +1,11 @@
-function [phase, eeg_signal] = generate_eeg_signal(t, fs, f0, jitter_strength)
+function [phase_gt, eeg_signal] = simulate_eeg_signal(t, fs, f_central, f_jitter_strength)
 % Function to generate an EEG signal with pink noise and a 10 Hz oscillation
+% saving the underlying information regarding the ground truth phase.
 % Inputs:
 %   t  - Time vector (in seconds)
 %   fs - Sampling rate (in Hz)
 % Outputs:
-%   phase      - Phase of the 10 Hz oscillation (in radians)
+%   phase_gt   - Phase of the 10 Hz oscillation (in radians)
 %   eeg_signal - Simulated EEG signal (in μV)
 
 % Total number of samples
@@ -21,14 +22,14 @@ f_pink = f_white .* S_full;  % Apply pink noise scaling
 pink_noise = ifft(f_pink, 'symmetric');
 pink_noise = (pink_noise - mean(pink_noise)) / std(pink_noise) * 20;  % Scale to 20 μV std dev
 
-% Generate 10 Hz oscillation with frequency jitter
+% Generate oscillation around central frequenuency with jitter
 freq_jitter = randn(1, N);
 sigma = fs * 0.1;  % Smoothing factor (corresponds to 0.1 sec)
 freq_jitter = smoothdata(freq_jitter, 'gaussian', sigma);
-freq_jitter = freq_jitter / std(freq_jitter) * jitter_strength;  % Scale jitter
-inst_freq = f0 + freq_jitter;  % Instantaneous frequency in Hz
-phase = wrapToPi(2 * pi * cumsum(inst_freq) / fs);
-oscillation = cos(phase);
+freq_jitter = freq_jitter / std(freq_jitter) * f_jitter_strength;  % Scale jitter
+inst_freq = f_central + freq_jitter;  % Instantaneous frequency in Hz
+phase_gt = wrapToPi(2 * pi * cumsum(inst_freq) / fs);
+oscillation = cos(phase_gt);
 oscillation = oscillation / std(oscillation) * 10;  % Scale to 10 μV std dev
 
 % Combine signals

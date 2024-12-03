@@ -1,18 +1,17 @@
 close all
 clear;
 
-%%
-% generate some fake data to demonstrate method (this is the training
-% signal)
+%% Generate some fake data to demonstrate method
+% (this is going to be the training signal)
 fs = 512;  % Sampling rate in Hz
 duration = 15;  % Duration in seconds
 t = linspace(0, duration, fs * duration);  % Time vector
-passband = [8 12];  % Passband in Hz
-f0 = 10;              % Central frequency in Hz
-jitter_strength = 1.0; % Jitter strength in Hz
+passband = [8 12];  % Passband in Hz for for filter prior to hilbert transform
+f_central = 10;          % Central frequency in Hz
+f_jitter_strength = 1.0; % Jitter strength in Hz
 
 rng(0);
-[phase_gt, eeg_signal] = eegepe.simulate_eeg_signal(t, fs, f0, jitter_strength);
+[phase_gt, eeg_signal] = eegepe.simulate_eeg_signal(t, fs, f_central, f_jitter_strength);
 
 % Plot the EEG signal
 figure;
@@ -37,12 +36,11 @@ grid on;
 % Branch 1: Backwards Difference (to suppress electrode drift) for features
 features = eegepe.process_eeg_for_features(eeg_signal);
 
-% Generate the target phase that we want to learn from the backwards
-% difference
+% Branch 2: Generate the target phase that we want to learn from the features
 bp_filter_order = round((fs * 1.5) + 1);
 [phase] = eegepe.process_eeg_for_target(eeg_signal, fs, bp_filter_order, passband, fs);
 
-% Learn the weights
+% Learn the weights (filters)
 n_f = 0.5 * fs;
 [real_weights, imag_weights] = eegepe.toeplitz_regression(features, phase, n_f);
 
@@ -85,8 +83,8 @@ ylabel('Weight Value');
 legend;
 
 %% Now say we have some new data that we want to apply the filter weights too:
-rng(1);
-[phase_gt_new, eeg_signal_new] = eegepe.simulate_eeg_signal(t, fs, f0, jitter_strength);
+rng(1);  % different rng to training
+[phase_gt_new, eeg_signal_new] = eegepe.simulate_eeg_signal(t, fs, f_central, f_jitter_strength);
 features_new = eegepe.process_eeg_for_features(eeg_signal_new);
 est_analytic = filter(real_weights, 1, features_new) + 1i * filter(imag_weights, 1, features_new);
 phase_new = angle(est_analytic);
