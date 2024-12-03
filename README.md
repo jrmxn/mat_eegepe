@@ -10,6 +10,7 @@ This repository provides a simple MATLAB implementation of `py_eegepe`, designed
 > McIntosh, J. R., & Sajda, P. (2019). Estimation of phase in EEG rhythms for real-time applications. *arXiv preprint*, arXiv:1910.08784.  
 > [Read the full paper here](https://arxiv.org/abs/1910.08784)
 
+Please note that this repository has not undergone thorough testing. Use at your own risk.
 ---
 
 ## Purpose

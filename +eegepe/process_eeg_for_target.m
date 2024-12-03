@@ -11,6 +11,9 @@ if nargin < 5
     acausal = true;
 end
 
+%%
+assert(all([size(eeg_signal, 1) == 1, size(eeg_signal, 2) > 1]), 'Expecting a 1 x N signal.');
+
 %% Branch 2: Bandpass Filtering and Hilbert Transform for Phase
 % Design FIR Bandpass Filter (8-12 Hz, order 769, Hamming window)
 nyquist = fs / 2;

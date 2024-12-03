@@ -1,18 +1,26 @@
+%% 
+% Example for instantanous (or future) causal phase revovery
 close all
 clear;
 
 %% Generate some fake data to demonstrate method
-% (this is going to be the training signal)
+% (this is going to be the training signal, it should  not include artifact)
+% properties of recording system
 fs = 512;  % Sampling rate in Hz
+% properties of recording
 duration = 15;  % Duration in seconds
 t = linspace(0, duration, fs * duration);  % Time vector
+% properties of target
 passband = [8 12];  % Passband in Hz for for filter prior to hilbert transform
+t_future = 0.00;  % how many seconds you want to predict into the future (0 by default)
+% properties of EEG rhythm
 f_central = 10;          % Central frequency in Hz
-f_jitter_strength = 1.0; % Jitter strength in Hz
+f_jitter_strength = 0.0; % Jitter strength in Hz
 
 rng(0);
 [phase_gt, eeg_signal] = eegepe.simulate_eeg_signal(t, fs, f_central, f_jitter_strength);
 
+%% plots of simulated EEG
 % Plot the EEG signal
 figure;
 plot(t, eeg_signal, 'b');
@@ -40,10 +48,16 @@ features = eegepe.process_eeg_for_features(eeg_signal);
 bp_filter_order = round((fs * 1.5) + 1);
 [phase] = eegepe.process_eeg_for_target(eeg_signal, fs, bp_filter_order, passband, fs);
 
+n_shift = round(t_future * fs);
+phase = circshift(phase, -n_shift);
+phase(end-n_shift:end) = nan;
+features(end-n_shift:end) = nan;
+
 % Learn the weights (filters)
 n_f = 0.5 * fs;
 [real_weights, imag_weights] = eegepe.toeplitz_regression(features, phase, n_f);
 
+%%
 figure;
 subplot(3, 1, 1);
 plot(t, eeg_signal);
@@ -83,18 +97,21 @@ ylabel('Weight Value');
 legend;
 
 %% Now say we have some new data that we want to apply the filter weights too:
+duration = 5;  % Duration in seconds
+t_new = linspace(0, duration, fs * duration);  % Time vector
+
 rng(1);  % different rng to training
-[phase_gt_new, eeg_signal_new] = eegepe.simulate_eeg_signal(t, fs, f_central, f_jitter_strength);
+[phase_gt_new, eeg_signal_new] = eegepe.simulate_eeg_signal(t_new, fs, f_central, f_jitter_strength);
 features_new = eegepe.process_eeg_for_features(eeg_signal_new);
 est_analytic = filter(real_weights, 1, features_new) + 1i * filter(imag_weights, 1, features_new);
 phase_new = angle(est_analytic);
 % bp_filter_order_short = round((fs * 0.22) + 1);
 
-%
+%%
 figure;
 hold on;
-plot(t, phase_gt_new, 'r', 'DisplayName', 'GT phase');
-plot(t, phase_new, 'b--', 'DisplayName', 'Causal instantaneously recovered phase');
+plot(t_new, phase_gt_new, 'r', 'DisplayName', 'GT phase');
+plot(t_new, phase_new, 'b--', 'DisplayName', 'Causal instantaneously recovered phase');
 
 xlabel('Time (s)');
 ylabel('Amplitude');
