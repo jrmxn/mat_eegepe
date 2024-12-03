@@ -46,12 +46,7 @@ features = eegepe.process_eeg_for_features(eeg_signal);
 
 % Branch 2: Generate the target phase that we want to learn from the features
 bp_filter_order = round((fs * 1.5) + 1);
-[phase] = eegepe.process_eeg_for_target(eeg_signal, fs, bp_filter_order, passband, fs);
-
-n_shift = round(t_future * fs);
-phase = circshift(phase, -n_shift);
-phase(end-n_shift:end) = nan;
-features(end-n_shift:end) = nan;
+[phase] = eegepe.process_eeg_for_target(eeg_signal, fs, bp_filter_order, passband, t_future);
 
 % Learn the weights (filters)
 n_f = 0.5 * fs;

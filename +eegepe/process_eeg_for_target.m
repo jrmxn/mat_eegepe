@@ -1,17 +1,23 @@
-function [phase] = process_eeg_for_target(eeg_signal, fs, bp_filter_order, passband, acausal)
+function [phase] = process_eeg_for_target(eeg_signal, fs, bp_filter_order, passband, t_future, acausal)
 % Function to process EEG signal into features and phase for analysis
 % Inputs:
-%   eeg_signal - Raw EEG signal (vector)
+%   eeg_signal - Raw EEG signal (1 x N vector)
 %   fs         - Sampling rate (in Hz)
+%   bp_filter_order - bandpass filter order (taps)
+%   t_future - how many seconds to predict into future (defualt: 0)
+%   acausal - whether to process acausally or not - should be true for most uses
 % Outputs:
 %   features - Features derived from the backwards difference (vector)
 %   phase    - Angular phase derived from the analytic signal (vector)
 
-if nargin < 5
+%%
+if nargin < 6
     acausal = true;
 end
+if nargin < 5
+    t_future = 0;
+end
 
-%%
 assert(all([size(eeg_signal, 1) == 1, size(eeg_signal, 2) > 1]), 'Expecting a 1 x N signal.');
 
 %% Branch 2: Bandpass Filtering and Hilbert Transform for Phase
@@ -40,5 +46,11 @@ complex_phase = analytic_signal ./ abs(analytic_signal);
 
 % Convert to angular phase (in radians)
 phase = angle(complex_phase);
+
+% shift the target vector if you want to predict beyond future time
+% (beyond instantaneous phase)
+n_shift = round(t_future * fs);
+phase = circshift(phase, -n_shift);
+phase(end-n_shift:end) = nan;
 
 end
